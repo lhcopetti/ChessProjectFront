@@ -47,6 +47,20 @@ function body_onload() {
             chessPiece.frame = indexAtSprite;
             this.chessPieces.add(chessPiece);
         },
+        drawBoard(FENBoard, blacksView)
+        {
+            if (typeof blacksView === 'undefined') { blacksView = false; }
+
+            var board = new ChessBoard(FENBoard);
+
+            var fenPieces = board.getPieces();
+
+            for (var i = 0; i < 8; i++)
+                for (var j = 0; j < 8; j++)
+                    if (fenPieces[i][j])
+                        this.drawAtPosition(i, blacksView ? 7 - j : j, fenPieces[i][j]);
+
+        },
         drawGrid: function()  {
 
             for (var i = 0; i < 8; i++)
@@ -82,17 +96,7 @@ function body_onload() {
 
             var command = $('#fen-board').text();
 
-            var b = new ChessBoard(command); 
-            alert(b.printInfo());
-
-            var fenPieces = b.getPieces(command.split(' ')[0]);
-
-            for (var i = 0; i < 8; i++)
-                for (var j = 0; j < 8; j++)
-                    if (fenPieces[i][j])
-                        this.drawAtPosition(i, j, fenPieces[i][j]);
-
-
+            this.drawBoard(command, true);
         },
         update: function () {
 
