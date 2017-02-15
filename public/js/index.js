@@ -35,7 +35,6 @@ function body_onload() {
         },
         drawAtPosition(x, y, pgnChessPiece) {
 
-
             var indexAtSprite = this.chessIndex.indexOf(pgnChessPiece.toLowerCase());
             if (this.isLowerCase(pgnChessPiece))
                 indexAtSprite += this.chessIndex.length;
@@ -49,7 +48,9 @@ function body_onload() {
         },
         drawBoard(FENBoard, blacksView)
         {
-            if (typeof blacksView === 'undefined') { blacksView = false; }
+            if (typeof blacksView === 'undefined') { 
+                blacksView = false; 
+            }
 
             var board = new ChessBoard(FENBoard);
 
@@ -84,6 +85,7 @@ function body_onload() {
         },
         create: function () {
 
+            this.flipped = false;
             this.chessPieces = game.add.group();
 
             this.chessIndex = ["k", "q", "b", "n", "r", "p"];
@@ -100,11 +102,11 @@ function body_onload() {
         },
         update: function () {
 
-/*            var command = $('#pgn-command').val();
+            var boardInFEN = $('#fen-board').text();
+            this.flipped = $('#perspective').text() === "black";
 
-            if (command)
-                alert("The command is: " + command);
-*/
+            this.chessPieces.removeAll();
+            this.drawBoard(boardInFEN, !this.flipped);
         }
     };
     var game = new Phaser.Game(BOARD_SIZE, BOARD_SIZE, Phaser.AUTO, 'gameDiv');
