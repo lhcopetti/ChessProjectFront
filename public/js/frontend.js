@@ -31,10 +31,7 @@ function sendCommand()
 
 
         var resp = req.responseText;
-        alert(resp);
         var jsonObj = JSON.parse(resp);
-
-        alert(jsonObj.errorCode);
 
         if (jsonObj.errorCode !== 0)
             alert("Deu erro: " + jsonObj.errorMessage);
