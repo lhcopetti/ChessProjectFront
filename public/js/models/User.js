@@ -1,11 +1,14 @@
-vogels = require('vogels');
-Joi = require('joi');
+vogels  = require('vogels');
+joi     = require('joi');
 
 module.exports = vogels.define('User', {
     hashKey : 'loginID',
 
+    timestamps : true,
+    updatedAt : false,
+
     schema : {
-        loginID : Joi.string(),
-        password : Joi.string()
+        loginID : joi.string(),
+        password : joi.string()
     }
 });

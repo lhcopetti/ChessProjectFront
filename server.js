@@ -6,8 +6,11 @@ var bodyParser  = require('body-parser');
 
 var app 		= express();
 
+var _ 			= require('underscore');
+
 var vogels 		= require('vogels');
 var User 		= require('./public/js/models/User.js');
+var ChessMatch	= require('./public/js/models/ChessMatch.js');
 
 app.use('/', express.static('./public'));
 app.set('views', './views');
@@ -42,6 +45,31 @@ vogels.createTables(function(err) {
 
 var luis = new User({ loginID : "lhcopetti" , password : "12345678"});
 var fez = new User({ loginID : "fez", password : "fez" });
+
+var chessMatch = new ChessMatch({
+	
+	matchHashID: "H4dF9c3o",
+	whitePlayerID : "lhcopetti",
+	blackPlayerID : "fez",
+	initialBoard : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+	matchHistory : 
+	{
+		pgnCommands : [ "e4", "e5", "Nf3", "Nf6" ],
+		FENBoard : [
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", 
+		"rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2", 
+		"rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", 
+		"rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"]
+	}
+});
+
+chessMatch.save(function(err) {
+	if (err)
+	{
+		console.log("Erro ao salvar partida de xadrez: " + err);
+		return;
+	}
+});
 
 luis.save(function(err) {});
 fez.save(function(err) {});
@@ -87,6 +115,45 @@ apiRoutes.post('/authenticate', function(req, res) {
 	});
 
 });
+
+apiRoutes.use(function(req, res, next) {
+	var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+	if (!token) {
+		return res.status(403).send({
+			success : false,
+			message : 'No token provided'
+		});
+	}
+
+	jwt.verify(token, app.get('superSecret'), function(err, decoded) {
+		if (err) {
+			return res.json({
+				success : false,
+				message: 'Failed to authenticate token'
+			});
+		}
+
+		req.decoded = decoded;
+		next();
+	});
+});
+
+apiRoutes.get('/users', function(req, res) {
+	User.scan().loadAll().attributes(['loginID', 'createdAt']).exec(function(err, users) {
+		if (err) {
+			console.log("Erro: " + err);
+		}
+
+		return res.json(users.Items);
+		/*res.json(_.map(users.Items, function(val) {
+			var newVal = val;
+			delete newVal.password;
+			return newVal;
+		}));*/
+	});
+});
+
 
 app.use('/api', apiRoutes);
 
