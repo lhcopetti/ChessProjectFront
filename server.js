@@ -146,11 +146,20 @@ apiRoutes.get('/users', function(req, res) {
 		}
 
 		return res.json(users.Items);
-		/*res.json(_.map(users.Items, function(val) {
-			var newVal = val;
-			delete newVal.password;
-			return newVal;
-		}));*/
+	});
+});
+
+apiRoutes.get('/users/:loginID', function(req, res) {
+	var loginID = req.params.loginID;
+
+	User.query(loginID).attributes(['loginID', 'createdAt']).exec(function(err, user){
+		if (err)
+		{
+			console.log("Erro ao realizar query por login: " + loginID + ". " + err);
+			return;
+		}
+
+		return res.json(user);
 	});
 });
 
