@@ -196,6 +196,40 @@ apiRoutes.get('/matches/:matchID', function(req, res) {
 	});
 });
 
+apiRoutes.get('/matches/:matchID/:index', function(req, res) {
+
+	var matchID = req.params.matchID;
+	var index = req.params.index;
+
+	console.log("Index is: " + index);
+
+	ChessMatch.query(matchID).exec(function(err, match) {
+
+		if (err) {
+			console.log("Erro ao realizar a query: " + err);
+			return;
+		}
+
+		if (match.Count === 0)
+			return res.status(404).send();
+
+
+		var dbMatch = match.Items[0].attrs;
+		console.log(dbMatch);
+
+		var history = _.find(dbMatch.matchHistory, function(arg) {
+			return arg.index == index;
+		});
+
+		console.log("History: " + JSON.stringify(history));
+		if (!history)
+			return res.status(404).send();
+
+		return res.json(history);
+	});
+
+});
+
 
 app.use('/api', apiRoutes);
 
