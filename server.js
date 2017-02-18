@@ -53,14 +53,26 @@ var chessMatch = new ChessMatch({
 	blackPlayerID : "fez",
 	initialBoard : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	matchHistory : 
-	{
-		pgnCommands : [ "e4", "e5", "Nf3", "Nf6" ],
-		FENBoard : [
-		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", 
-		"rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2", 
-		"rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", 
-		"rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"]
-	}
+	[{
+			index: 1,
+			command : "e4",
+			board : "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+		},
+		{
+			index: 2,
+			command : "e5",
+			board : "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2"
+		},
+		{
+			index: 3,
+			command : "Nf3",
+			board : "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+		},
+		{
+			index: 4,
+			command : "Nf6",
+			board : "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"
+		}]
 });
 
 chessMatch.save(function(err) {
@@ -153,13 +165,34 @@ apiRoutes.get('/users/:loginID', function(req, res) {
 	var loginID = req.params.loginID;
 
 	User.query(loginID).attributes(['loginID', 'createdAt']).exec(function(err, user){
+
 		if (err)
 		{
 			console.log("Erro ao realizar query por login: " + loginID + ". " + err);
 			return;
 		}
 
-		return res.json(user);
+		if (user.Count === 0)
+			return res.status(404).send();
+ 
+		return res.json(user.Items[0]);
+	});
+});
+
+apiRoutes.get('/matches/:matchID', function(req, res) {
+	var matchID = req.params.matchID;
+
+	ChessMatch.query(matchID).exec(function(err, match) {
+
+		if (err) {
+			console.log("Erro ao realizar a query: " + err);
+			return;
+		}
+
+		if (match.Count === 0)
+			return res.status(404).send();
+
+		return res.json(match.Items[0]);
 	});
 });
 

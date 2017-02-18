@@ -9,9 +9,10 @@ module.exports = vogels.define('ChessMatch', {
         whitePlayerID : joi.string(),
         blackPlayerID : joi.string(),
         initialBoard : joi.string(),
-        matchHistory : {
-            pgnCommands : vogels.types.stringSet(),
-            FENBoard : vogels.types.stringSet()
-        }
+        matchHistory : joi.array({
+            index : joi.number().required(),
+            command : joi.string().required(),
+            board : joi.string().required()
+        })
     }
 });
