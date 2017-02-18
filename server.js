@@ -12,6 +12,8 @@ var vogels 		= require('vogels');
 var User 		= require('./public/js/models/User.js');
 var ChessMatch	= require('./public/js/models/ChessMatch.js');
 
+var allChessMatches = require('./chessMatchesTest.js');
+
 app.use('/', express.static('./public'));
 app.set('views', './views');
 
@@ -45,46 +47,24 @@ vogels.createTables(function(err) {
 
 var luis = new User({ loginID : "lhcopetti" , password : "12345678"});
 var fez = new User({ loginID : "fez", password : "fez" });
+var braid = new User({ loginID: "braid", password : "BRAID" });
 
-var chessMatch = new ChessMatch({
-	
-	matchHashID: "H4dF9c3o",
-	whitePlayerID : "lhcopetti",
-	blackPlayerID : "fez",
-	initialBoard : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-	matchHistory : 
-	[{
-			index: 1,
-			command : "e4",
-			board : "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-		},
-		{
-			index: 2,
-			command : "e5",
-			board : "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2"
-		},
-		{
-			index: 3,
-			command : "Nf3",
-			board : "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
-		},
-		{
-			index: 4,
-			command : "Nf6",
-			board : "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"
-		}]
-});
-
-chessMatch.save(function(err) {
+function saveChessCallback(err) {
 	if (err)
 	{
 		console.log("Erro ao salvar partida de xadrez: " + err);
 		return;
 	}
+}
+
+_.forEach(allChessMatches, function(chessMatch) {
+	chessMatch.save(saveChessCallback);
 });
+
 
 luis.save(function(err) {});
 fez.save(function(err) {});
+braid.save(function(err) {});
 
 
 var apiRoutes = express.Router();
@@ -179,7 +159,7 @@ apiRoutes.get('/users/:loginID', function(req, res) {
 	});
 });
 
-apiRoutes.get('/matches/:matchID', function(req, res) {
+apiRoutes.get('/matches/ID/:matchID', function(req, res) {
 	var matchID = req.params.matchID;
 
 	ChessMatch.query(matchID).exec(function(err, match) {
@@ -196,7 +176,7 @@ apiRoutes.get('/matches/:matchID', function(req, res) {
 	});
 });
 
-apiRoutes.get('/matches/:matchID/:index', function(req, res) {
+apiRoutes.get('/matches/ID/:matchID/:index', function(req, res) {
 
 	var matchID = req.params.matchID;
 	var index = req.params.index;
@@ -228,6 +208,28 @@ apiRoutes.get('/matches/:matchID/:index', function(req, res) {
 		return res.json(history);
 	});
 
+});
+
+apiRoutes.get('/matches/user/:loginID', function(req, res) {
+
+	var loginID = req.params.loginID;
+
+	ChessMatch.scan().filterExpression('#w = :l OR #b = :l')
+		.expressionAttributeValues({ ':l' : loginID})
+		.expressionAttributeNames({ '#w' : 'whitePlayerID', '#b' : 'blackPlayerID'})
+		.projectionExpression('whitePlayerID, blackPlayerID, matchHashID, gameOver')
+		.exec(function(err, result) {
+			if (err)
+			{
+				console.log("Erro ao filtrar partidas por usuário. " + err);
+				return;
+			}
+
+			if (result.Count == 0)
+				return res.status(404).send();
+
+			res.json(result.Items);
+		});
 });
 
 
