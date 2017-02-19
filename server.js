@@ -82,6 +82,7 @@ apiRoutes.get ('/matches/ID/:matchID', 				routeMatches.matchByID);
 apiRoutes.post('/matches/ID/:matchID',				routeMatches.play);
 apiRoutes.get ('/matches/ID/:matchID/index/:index',	routeMatches.byIDandIndex);
 apiRoutes.get ('/matches/user/:loginID', 			routeMatches.matchesByLogin);
+apiRoutes.post('/matches/new',						routeMatches.createMatch);
 
 app.use('/api', apiRoutes);
 

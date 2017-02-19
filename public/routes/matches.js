@@ -1,5 +1,8 @@
 var ChessMatch          = require('../js/models/ChessMatch');
+var User				= require('../js/models/User');
+
 var _                   = require('underscore');
+var async				= require('async');
 
 var lambda				= require('../js/lambda/interpretCommand');
 
@@ -107,20 +110,24 @@ exports.play = function(req, res) {
 
 		var turnForWhite = false;
 		var boardInput = "";
+		var lastIndex;
 
 		if (!chessMatch.matchHistory || chessMatch.matchHistory.length == 0) {
 			turnForWhite = true;
 			boardInput = chessMatch.initialBoard;
+			lastIndex = 0;
 		}
 		else {
-			var lastIndex = _.max(chessMatch.matchHistory, function(arg) {
+			var lastHistory = _.max(chessMatch.matchHistory, function(arg) {
 				return arg.index;
 			});	
-			turnForWhite = lastIndex.index % 2 == 0;
-			boardInput = lastIndex.board;
+			turnForWhite = lastHistory.index % 2 == 0;
+			boardInput = lastHistory.board || chessMatch.initialBoard;
+			lastIndex = lastHistory.index;
 		}
 
 		userIDTurn = turnForWhite ? chessMatch.whitePlayerID : chessMatch.blackPlayerID;
+		console.log("User turn is: " + userIDTurn);
 
 		if (userIDTurn != userID) {
 			return res.status(404).json({ success: false, message: 'It is not your turn to play.'});
@@ -145,9 +152,9 @@ exports.play = function(req, res) {
 			}
 
 			var chessHistory = {
-				index : (lastIndex.index + 1),
-				command : lambdaPayload.pgnCommand,
-				board : lambdaPayload.fenBoardOutput
+				'index' : (lastIndex + 1),
+				'command' : lambdaPayload.pgnCommand,
+				'board' : lambdaPayload.fenBoardOutput
 			};
 
 			/* Append new history to the end of chess match */
@@ -158,30 +165,127 @@ exports.play = function(req, res) {
 			ChessMatch.update({matchHashID : matchID}, params, function(err, mov) {
 
 			if (err) {
-				console.log("Error while updateing chessHistory to database. " + err);
+				console.log("Error while updating chessHistory to database. " + err);
 				return res.status(404).json({ success : false, message: err});
 			}
 
 			console.log("Output: " + JSON.stringify(chessHistory));
 			return res.status(200).json(result);
 			});
-
-/*
-			ChessMatch.update({
-				matchHashID : matchID,
-				matchHistory : { $add : [chessHistory]}
-			}, function(err, result) {
-
-				if (err) {
-					console.log("Error while updateing chessHistory to database. " + err);
-					return res.status(404).json({ success : false, message: err});
-				}
-
-				console.log("Output: " + JSON.stringify(chessHistory));
-				return res.status(200).json(result);
-				});
-
-*/
 		});
+	});
+}
+
+function makeMatchHashID(length)
+{
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < length; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+
+function generateUniqueHashID() {
+
+	var maxRetries = 10;
+	var counter = 0;
+
+	while(counter++ < maxRetries) {
+
+	}
+
+}
+
+function checkWhitePlayerExistence(createMatchArgs, callback) {
+
+		User.query(createMatchArgs.wPlayer).exec(function(err, user) {
+
+		if (err) 
+			callback("White player query error: " + err);
+		else 
+			callback(null, createMatchArgs);
+	});
+}
+
+
+function checkBlackPlayerExistence(createMatchArgs, callback) {
+
+		User.query(createMatchArgs.bPlayer).exec(function(err, user) {
+
+		if (err) 
+			callback("Black player query error: " + err);
+		else
+			callback(null, createMatchArgs);
+	});
+}
+
+function checkUniqueHashID(createMatchArgs, callback) {
+
+		ChessMatch.query(createMatchArgs.ID).exec(function(err, result) {
+
+			if (err)
+			{
+				callback(err);
+			}
+			else if (result.Count > 0)
+			{
+				callback('MatchHashID just created [' + createMatchArgs.ID + '] already exists in the database');
+			}
+			else		
+				callback(null, createMatchArgs);
+	});
+}
+
+function saveNewMatch(createMatchArgs, callback) 
+{
+	var newMatch = new ChessMatch({
+			'matchHashID': createMatchArgs.ID,
+			'whitePlayerID' : createMatchArgs.wPlayer,
+			'blackPlayerID' : createMatchArgs.bPlayer,
+			'initialBoard' : createMatchArgs.iBoard,
+			'matchHistory' : createMatchArgs.matchHistory
+		});
+
+	console.log(newMatch);
+	newMatch.save(callback);
+}
+
+exports.createMatch = function(req, res) 
+{ 
+
+	var whitePlayerID = req.body.whitePlayerID;
+	var blackPlayerID = req.body.blackPlayerID;
+	var initialBoard = req.body.initialBoard || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+	if (!whitePlayerID || !blackPlayerID)
+		return res.status(404).json({success: false, 'message': 'Request is missing parameters [whitePlayerID, blackPlayerID, initialBoard (optional)]'});
+
+	/* Generate an unused hashID */
+	var matchID = makeMatchHashID(8);
+
+	var createMatchArgs = { 
+		'ID' : matchID, 
+		'wPlayer' : whitePlayerID, 
+		'bPlayer' : blackPlayerID, 
+		'iBoard' : initialBoard,
+		'matchHistory' : [{'index': 0}]};
+
+	async.waterfall(
+		[
+			async.constant(createMatchArgs),
+			checkUniqueHashID,
+			checkWhitePlayerExistence,
+			checkBlackPlayerExistence,
+			saveNewMatch
+		], 
+	function(err) {
+		if (err) {
+			console.log('Error while creating new match [' + err + '] for ' + JSON.stringify(createMatchArgs));
+			return res.status(404).json({success: false, 'message' : err});
+		}
+
+		return res.json({success: true, message: 'Match created successfully'});		
 	});
 }
