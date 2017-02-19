@@ -224,15 +224,12 @@ function checkUniqueHashID(createMatchArgs, callback) {
 		ChessMatch.query(createMatchArgs.ID).exec(function(err, result) {
 
 			if (err)
-			{
-				callback(err);
-			}
-			else if (result.Count > 0)
-			{
-				callback('MatchHashID just created [' + createMatchArgs.ID + '] already exists in the database');
-			}
-			else		
-				callback(null, createMatchArgs);
+				return callback(err);
+
+			if (result.Count > 0)
+				return callback('MatchHashID just created [' + createMatchArgs.ID + '] already exists in the database');
+
+			callback(null, createMatchArgs);
 	});
 }
 
