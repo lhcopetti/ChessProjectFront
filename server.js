@@ -77,9 +77,10 @@ apiRoutes.use(routeAuthentication.validate);
 apiRoutes.get('/users', 						routeUser.getAll);
 apiRoutes.get('/users/:loginID', 				routeUser.getSingle);
 
-apiRoutes.get('/matches/ID/:matchID', 			routeMatches.matchByID);
-apiRoutes.get('/matches/ID/:matchID/:index', 	routeMatches.byIDandIndex);
-apiRoutes.get('/matches/user/:loginID', 		routeMatches.matchesByLogin);
+apiRoutes.get('/matches/ID/:matchID', 				routeMatches.matchByID);
+apiRoutes.post('/matches/ID/:matchID',				routeMatches.play);
+apiRoutes.get('/matches/ID/:matchID/index/:index', 	routeMatches.byIDandIndex);
+apiRoutes.get('/matches/user/:loginID', 			routeMatches.matchesByLogin);
 
 app.use('/api', apiRoutes);
 
