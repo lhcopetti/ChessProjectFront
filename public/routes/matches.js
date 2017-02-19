@@ -1,11 +1,9 @@
+var lambda				= require('../js/lambda/interpretCommand');
 var ChessMatch          = require('../js/models/ChessMatch');
 var User				= require('../js/models/User');
 
 var _                   = require('underscore');
 var async				= require('async');
-
-var lambda				= require('../js/lambda/interpretCommand');
-
 
 exports.matchByID = function(req, res) {
 	var matchID = req.params.matchID;
@@ -80,100 +78,111 @@ exports.matchesByLogin = function(req, res) {
 		});
 };
 
+function checkMatchExists(params, callback) {
+
+	ChessMatch.query(params.matchID).exec(function(err, data) {
+
+		if (err) 
+			return callback("Error while retrieving match. " + err);
+
+		if (data.Count == 0) 
+			return callback('There is no match with the given ID: ' + params.matchID);
+
+		params.chessMatch = data.Items[0].attrs;
+		callback(null, params);
+	});
+};
+
+function checkGameIsNotOver(params, callback) {
+	if (params.chessMatch.gameOver)
+		return callback('The game ['+ params.matchID +'] is already over!');
+	return callback(null, params);
+}
+
+function checkIsPlayerTurn(params, callback) {
+
+	var lastHistory = _.max(params.chessMatch.matchHistory, function(arg) {
+		return arg.index;
+	});
+
+	var turnForWhite = lastHistory.index % 2 == 0;
+	userIDTurn = turnForWhite ? params.chessMatch.whitePlayerID : params.chessMatch.blackPlayerID;
+
+	if (userIDTurn != params.userID)
+		return callback('It is not your turn to play.');
+
+	params.boardInput = lastHistory.board || chessMatch.initialBoard;
+	params.lastIndex = 	lastHistory.index;
+	return callback(null, params);
+}
+
+function sendLambdaCommand(params, callback) {
+
+	lambda.sendCommand(params.boardInput, params.command, function(err, result) {
+			if (err) 
+				return callback('Error calling lambda: ' + err);
+
+			if (result.StatusCode != 200)
+				return callback('Lambda status error: ' + result.StatusCode);
+
+			var lambdaPayload = JSON.parse(result.Payload);
+
+			if (lambdaPayload.errorCode != 0)
+				return callback('Chess logic error: ' + lambdaPayload.errorMessage);
+
+			params.lambdaPayload = lambdaPayload;
+			callback(null, params);
+	});
+}
+
+function persistExecutionResult(params, callback) {
+
+	var chessHistory = {
+		'index' 	: params.lastIndex + 1,
+		'command' 	: params.lambdaPayload.pgnCommand,
+		'board' 	: params.lambdaPayload.fenBoardOutput };
+
+	/* Append new history to the end of chess match */
+	var dbUpdateParams = {};
+	dbUpdateParams.UpdateExpression = 'SET #hist = list_append(#hist, :new_hist)';
+	dbUpdateParams.ExpressionAttributeNames = {'#hist' : 'matchHistory'};
+	dbUpdateParams.ExpressionAttributeValues = {':new_hist' : [chessHistory]};
+	ChessMatch.update({'matchHashID' : params.matchID}, dbUpdateParams, function(err, mov) {
+
+		if (err)
+			return callback("Error while updating chessHistory to database. " + err);
+
+		return callback(null, params.lambdaPayload);
+	});
+};
+
 exports.play = function(req, res) {
 
 	var userID  = req.decoded.loginID;
 	var matchID = req.params.matchID;
 	var command = req.body.pgnCommand;
 
-	console.log("Play route. User: " + userID + " GameID: " + matchID + " Command: " + command);
-
-	if (!command) {
+	if (!command)
 		return res.status(404).json({ success: false, message: 'There is no command available'});
-	}
 
-	ChessMatch.query(matchID).exec(function(err, data) {
-		if (err) {
-			console.log("Erro ao recuperar partida: " + matchID + ". " + err);
-			return;
-		}
+	var params = { 'userID' : userID, 'matchID': matchID, 'command': command};
 
-		if (data.Count == 0) {
-			return res.status(404).json({ success : false, message: 'There is no game with the given ID: ' + matchID});
-		}
+	async.waterfall(
+		[
+			async.constant(params),
+			checkMatchExists,
+			checkGameIsNotOver,
+			checkIsPlayerTurn,
+			sendLambdaCommand,
+			persistExecutionResult
+		],
+		function(err, results) {
+			if (err)
+				return res.status(404).json({'success':false, 'message': 'Error while playing ['+command+']. ' + err});
 
-		var chessMatch = data.Items[0].attrs;
-
-		if (chessMatch.gameOver) {
-			return res.status(404).json({ success: false, message: 'The game ['+ matchID +'] is already over!'});
-		}
-
-		var turnForWhite = false;
-		var boardInput = "";
-		var lastIndex;
-
-		if (!chessMatch.matchHistory || chessMatch.matchHistory.length == 0) {
-			turnForWhite = true;
-			boardInput = chessMatch.initialBoard;
-			lastIndex = 0;
-		}
-		else {
-			var lastHistory = _.max(chessMatch.matchHistory, function(arg) {
-				return arg.index;
-			});	
-			turnForWhite = lastHistory.index % 2 == 0;
-			boardInput = lastHistory.board || chessMatch.initialBoard;
-			lastIndex = lastHistory.index;
-		}
-
-		userIDTurn = turnForWhite ? chessMatch.whitePlayerID : chessMatch.blackPlayerID;
-		console.log("User turn is: " + userIDTurn);
-
-		if (userIDTurn != userID) {
-			return res.status(404).json({ success: false, message: 'It is not your turn to play.'});
-		}
-
-		lambda.sendCommand(boardInput, command, function(err, result) {
-			if (err) {
-				return res.status(404).json({ success: false, message: 'Error calling lambda: ' + err});
-			}
-
-			if (result.StatusCode != 200) {
-				return res.status(result.StatusCode).json({
-					success : false,
-					message : 'Lambda status error'
-				});
-			}
-
-			var lambdaPayload = JSON.parse(result.Payload);
-
-			if (lambdaPayload.errorCode != 0) {
-				return res.status(404).json({ success: false, message: 'Chess logic error: ' + lambdaPayload.errorMessage});
-			}
-
-			var chessHistory = {
-				'index' : (lastIndex + 1),
-				'command' : lambdaPayload.pgnCommand,
-				'board' : lambdaPayload.fenBoardOutput
-			};
-
-			/* Append new history to the end of chess match */
-			var params = {};
-			params.UpdateExpression = 'SET #hist = list_append(#hist, :new_hist)';
-			params.ExpressionAttributeNames = {'#hist' : 'matchHistory'};
-			params.ExpressionAttributeValues = {':new_hist' : [chessHistory]};
-			ChessMatch.update({matchHashID : matchID}, params, function(err, mov) {
-
-			if (err) {
-				console.log("Error while updating chessHistory to database. " + err);
-				return res.status(404).json({ success : false, message: err});
-			}
-
-			console.log("Output: " + JSON.stringify(chessHistory));
-			return res.status(200).json(result);
-			});
-		});
-	});
+			return res.json({success:true, 'message' : 'Command played successfully', 'result' : results});
+		}	
+	)
 }
 
 function makeMatchHashID(length)
@@ -185,17 +194,6 @@ function makeMatchHashID(length)
         text += possible.charAt(Math.floor(Math.random() * possible.length));
 
     return text;
-}
-
-function generateUniqueHashID() {
-
-	var maxRetries = 10;
-	var counter = 0;
-
-	while(counter++ < maxRetries) {
-
-	}
-
 }
 
 function checkWhitePlayerExistence(createMatchArgs, callback) {
