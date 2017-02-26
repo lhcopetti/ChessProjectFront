@@ -93,19 +93,22 @@ app.controller('listGamesCtrl',
 
     var self = this;
 
-
-
     $http.get('http://localhost:3000/api/matches/user/' + $scope.userLogin, {
         headers: {'x-access-token' : $scope.token}
     }).success(function(data, status) 
     {
+        console.log("Status is: " + status);
         if (status != 200) 
         {
             console.log("Erro: " + status + ". " + data.message);
+            delete $scope.matches;
             return;
         }              
 
         $scope.matches = data;
+    }).error(function(data, status) {
+        console.log("Error. Status is: " + status);
+        delete $scope.matches;
     });
 
     $scope.matches = [ {whitePlayerID: 'fez', blackPlayerID: 'lhcopetti', matchHashID : 'alskdfjalks'} ];
