@@ -1,5 +1,34 @@
-var app = angular.module('chessProjectApp', ["ngTable"]);
+var underscore = angular.module('underscore', []);
 
+underscore.factory('_', ['$window', function() {
+    return $window._;
+}]);
+
+var app = angular.module('chessProjectApp', ['ngTable', 'underscore']);
+
+
+app.service('dataPersistance', function($window)
+{
+    var contentKey = 'APP.dataPersistance';
+        
+    var setData = function(newObj) { 
+        $window.sessionStorage.setItem(contentKey, JSON.stringify(newObj));
+    };
+
+    var getData = function() {
+        var myData = $window.sessionStorage.getItem(contentKey);
+
+        if (myData)
+            myData = JSON.parse(myData);
+
+        return myData || {};
+    };
+
+    return {
+        setData : setData,
+        getData : getData
+    };
+});
 
 app.service('loginTokenProvider', function($window)
 {
@@ -54,7 +83,9 @@ app.controller('listGamesCtrl',
         'loginTokenProvider', 
         'NgTableParams', 
         '$http',
-        function($scope, loginTokenProvider, NgTableParams, $http) 
+        'dataPersistance',
+        '$window',
+        function($scope, loginTokenProvider, NgTableParams, $http, dataPersistance, $window) 
 {
     console.log(loginTokenProvider);
     $scope.token = loginTokenProvider.getData().token;
@@ -78,5 +109,40 @@ app.controller('listGamesCtrl',
     });
 
     $scope.matches = [ {whitePlayerID: 'fez', blackPlayerID: 'lhcopetti', matchHashID : 'alskdfjalks'} ];
+
+    $scope.changeChessViewTo = function(match) 
+    {
+        dataPersistance.setData(match);
+        $window.location.href = './gamescreen.html';
+    }
     //self.tableParams = new NgTableParams({}, { dataset: data});
+}]);
+
+app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'loginTokenProvider', '$http', 
+        function($scope, $window, dataPersistance, loginTokenProvider, $http, _) {
+    $scope.match = dataPersistance.getData();
+    $scope.userLogin = loginTokenProvider.getData().login;
+    $scope.token = loginTokenProvider.getData().token;
+
+
+    $scope.getLastFENHistory = function(data) {
+        var maxIndex = $window._.max(data.matchHistory, function(data) { return data.index; });
+        return maxIndex.board;
+    }
+    $scope.reloadBoard = function(matchID) 
+    {
+        $http.get('http://localhost:3000/api/matches/ID/' + $scope.match.matchHashID, {
+        headers: {'x-access-token' : $scope.token}
+    }).success(function(data, status) 
+    {
+        if (status != 200) 
+        {
+            console.log("Erro: " + status + ". " + data.message);
+            return;
+        }              
+
+        $scope.FENBoard = $scope.getLastFENHistory(data);
+    });
+    }
+    $scope.reloadBoard();
 }]);

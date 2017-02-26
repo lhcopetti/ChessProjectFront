@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" ng-app='chessProjectApp'>
 <head>
     <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <link rel="stylesheet"; href="https://unpkg.com/ng-table@2.0.2/bundles/ng-table.min.css">
+    <script src="https://unpkg.com/ng-table@2.0.2/bundles/ng-table.min.js"></script>
+    <script src="../js/controller/angularController.js"></script>
     <script src='../js/phaser/phaser.js'></script>
     <script src='../js/jquery/jquery-3.1.1.js'></script>
     <script src='../js/chess-board.js'></script>
@@ -19,9 +24,13 @@
 
 <title>Chess Project</title>
 <h1>Welcome to the PGN ChessProject</h1>
-<body>
+<body ng-controller='gameScreenCtrl'>
+    <h1>Logged in as: {{userLogin}}</h1>
+    <h1>Match: {{match.matchHashID}}</h1>
+    <h1>White Player: {{match.whitePlayerID}}</h1>
+    <h1>Black Player: {{match.blackPlayerID}}</h1>
     <h1>Focus on the game down here!</h1>
-    <div><h4>FEN BOARD: <div id="fen-board">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</div></h4></div>
+    <div><h4>FEN BOARD: <div id="fen-board" >{{FENBoard}}</div></h4></div>
     <h4>Perspective: <div id="perspective">white</div></h4>
     <input type="button" onclick="onClickFlipButton()">Flip board!</input>
     <div id="gameDiv"></div>

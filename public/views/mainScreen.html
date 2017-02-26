@@ -13,20 +13,21 @@
 <title>Chess Project - MainScreen</title>
 <h1>Welcome to the PGN ChessProject</h1>
 <body>
-    <h1>Choose a game to resume playing or create a new one!</h1>
     <div ng-controller='listGamesCtrl'>
+    <h1>Logged in as: {{userLogin}}</h1>
+    <h1>Choose a game to resume playing or create a new one!</h1>
+
+    <h3>Games List</h3>
 
         <table ng-table="mv.tableParams" class="table table-striped">
             <tr ng-repeat="match in matches">
                 <td title="'MatchID'">{{match.matchHashID}}</td>
                 <td title="'white'">{{match.whitePlayerID}}</td>
                 <td title="'black'">{{match.blackPlayerID}}</td>
+                <td title="'Play'"><button ng-click="changeChessViewTo(match)">Play!</button></td>
             </tr>
         </table>
-
-{{token}}
     </div>
-    <h3>Games List</h3>
 
 </body> 
 
