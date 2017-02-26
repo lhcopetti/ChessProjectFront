@@ -148,4 +148,25 @@ app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'login
     });
     }
     $scope.reloadBoard();
+
+    $scope.sendCommand = function(PGNCommand) {
+        var userID = $scope.userLogin;
+        var matchID = $scope.match.matchHashID;
+
+        var url = 'http://localhost:3000/api/matches/ID/' + matchID;
+
+        $http.post(url, 
+        {
+            'token' : $scope.token,
+            'pgnCommand' : PGNCommand
+        }).success(function(data, status) {
+            console.log('Data successfully transmitted!');
+            console.log(data);
+            $scope.FENBoard = data.result.fenBoardOutput;
+
+        }).error(function(data, status){
+            alert('Error! Check log for details');
+            console.log(JSON.stringify(data) + ' ' + status);
+        });
+    }
 }]);
