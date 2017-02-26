@@ -5,6 +5,8 @@
     <meta charset="utf-8" />
 
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <link rel="stylesheet"; href="https://unpkg.com/ng-table@2.0.2/bundles/ng-table.min.css">
+    <script src="https://unpkg.com/ng-table@2.0.2/bundles/ng-table.min.js"></script>
     <script src="../js/controller/angularController.js"></script>
 </head>
 
@@ -14,6 +16,15 @@
     <h1>Choose a game to resume playing or create a new one!</h1>
     <div ng-controller='listGamesCtrl'>
 
+        <table ng-table="mv.tableParams" class="table table-striped">
+            <tr ng-repeat="match in matches">
+                <td title="'MatchID'">{{match.matchHashID}}</td>
+                <td title="'white'">{{match.whitePlayerID}}</td>
+                <td title="'black'">{{match.blackPlayerID}}</td>
+            </tr>
+        </table>
+
+{{token}}
     </div>
     <h3>Games List</h3>
 
