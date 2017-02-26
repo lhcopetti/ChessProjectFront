@@ -82,6 +82,12 @@ function body_onload() {
 
             game.load.spritesheet('chess-set', '../assets/imgs/chess_piece_set.png', 333, 333, 12);
 
+            /*
+             *   This line of code allows phaser to keep rendering even when the 
+             * browser tab has lost focus 
+             */
+            game.stage.disableVisibilityChange = true;
+
         },
         create: function () {
 

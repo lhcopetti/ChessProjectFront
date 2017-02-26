@@ -121,8 +121,8 @@ app.controller('listGamesCtrl',
     //self.tableParams = new NgTableParams({}, { dataset: data});
 }]);
 
-app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'loginTokenProvider', '$http', 
-        function($scope, $window, dataPersistance, loginTokenProvider, $http, _) {
+app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'loginTokenProvider', '$http', '$timeout', 
+        function($scope, $window, dataPersistance, loginTokenProvider, $http, $timeout, _) {
     $scope.match = dataPersistance.getData();
     $scope.userLogin = loginTokenProvider.getData().login;
     $scope.token = loginTokenProvider.getData().token;
@@ -147,7 +147,16 @@ app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'login
         $scope.FENBoard = $scope.getLastFENHistory(data);
     });
     }
-    $scope.reloadBoard();
+
+    $scope.intervalFunction = function() 
+    {
+        $timeout(function() {
+            $scope.reloadBoard();
+            $scope.intervalFunction();
+        }, 5000);
+    }
+
+    $scope.intervalFunction();
 
     $scope.sendCommand = function(PGNCommand) {
         var userID = $scope.userLogin;
