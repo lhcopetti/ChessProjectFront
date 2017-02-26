@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" ng-app="demo">
 <head>
     <meta charset="utf-8" />
+    <title>Chess Project</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <script src="js/controller/angularController.js"></script>
 </head>
-<title>Chess Project</title>
 <h1>Welcome to the PGN ChessProject</h1>
 <body>
     <h1><a href="../views/login.html">Head down to the Login Page</a></h1>
+
+    <div ng-controller="Hello">
+            <p>The ID is: {{greeting}}</p>
+            <p>The content is {{greeting.content}}</P>
+    </div>
 </body> 
 
 </html>
