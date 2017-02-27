@@ -153,9 +153,10 @@ app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'login
         $timeout(function() {
             $scope.reloadBoard();
             $scope.intervalFunction();
-        }, 5000);
+        }, 3000);
     }
 
+    $scope.reloadBoard();
     $scope.intervalFunction();
 
     $scope.sendCommand = function(PGNCommand) {
