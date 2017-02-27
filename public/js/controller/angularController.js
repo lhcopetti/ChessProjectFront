@@ -127,6 +127,12 @@ app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'login
     $scope.userLogin = loginTokenProvider.getData().login;
     $scope.token = loginTokenProvider.getData().token;
 
+    if ($scope.match.whitePlayerID === $scope.userLogin)
+        $scope.perspective = "white";
+    else 
+        $scope.perspective = "black";
+
+    console.log($scope.perspective);
 
     $scope.getLastFENHistory = function(data) {
         var maxIndex = $window._.max(data.matchHistory, function(data) { return data.index; });
@@ -178,5 +184,12 @@ app.controller('gameScreenCtrl', ['$scope', '$window', 'dataPersistance', 'login
             alert('Error! Check log for details');
             console.log(JSON.stringify(data) + ' ' + status);
         });
+    }
+
+    $scope.flipPerspective = function() {
+        if ($scope.perspective === "white")
+            $scope.perspective = "black";
+        else
+            $scope.perspective = "white";
     }
 }]);

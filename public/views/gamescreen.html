@@ -13,13 +13,6 @@
     <script src='../js/chess-board.js'></script>
     <script src='../js/index.js'></script>
     <script src='../js/frontend.js'></script>
-
-    <script>
-        function onClickFlipButton() {
-            var txt = $('#perspective').text();
-            $('#perspective').text(txt === "black" ? "white" : "black");
-        }
-    </script>
 </head>
 
 <title>Chess Project</title>
@@ -31,8 +24,8 @@
     <h1>Black Player: {{match.blackPlayerID}}</h1>
     <h1>Focus on the game down here!</h1>
     <div><h4>FEN BOARD: <div id="fen-board" >{{FENBoard}}</div></h4></div>
-    <h4>Perspective: <div id="perspective">white</div></h4>
-    <input type="button" onclick="onClickFlipButton()">Flip board!</input>
+    <h4>Perspective: <div id="perspective">{{perspective}}</div></h4>
+    <button ng-click="flipPerspective()">Flip board</button>
     <div id="gameDiv"></div>
     <h1>Focus on the game up there!</h1>
 
